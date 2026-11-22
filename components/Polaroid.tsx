@@ -58,6 +58,9 @@ const Polaroid: React.FC<PolaroidProps> = ({
       return;
     }
     const video = document.createElement('video');
+    video.preload = 'auto';
+    video.style.cssText = 'position:fixed;width:2px;height:2px;opacity:0.01;pointer-events:none;left:0;top:0;';
+    document.body.appendChild(video);
     video.src = data.url;
     video.crossOrigin = 'anonymous';
     video.loop = true;
@@ -79,6 +82,7 @@ const Polaroid: React.FC<PolaroidProps> = ({
     setVideoTexture(tex);
     return () => {
       video.pause();
+      video.remove();
       video.removeAttribute('src');
       video.load();
       tex.dispose();

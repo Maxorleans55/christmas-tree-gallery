@@ -17,7 +17,7 @@ import { Analytics } from '@vercel/analytics/react';
 import { get, set } from 'idb-keyval';
 import { DEFAULT_MEDIA } from './defaultMedia';
 
-const STORE_KEY = 'lumiere-tree-v2'; // bump the number to force everyone back to the defaults
+const STORE_KEY = 'lumiere-tree-v3'; // bump the number to force everyone back to the defaults
 const MAX_VIDEO_MB = 50;
 
 const serializePhotos = (photos: PhotoData[]) =>
@@ -79,7 +79,7 @@ const App: React.FC = () => {
 
       const positions = generatePhotoPositions(DEFAULT_PHOTOS_COUNT);
       const types = Object.values(PLACEHOLDER_TYPES);
-      const step = Math.max(1, Math.floor(DEFAULT_PHOTOS_COUNT / Math.max(1, DEFAULT_MEDIA.length)));
+      const step = 2; // media in every 2nd slot, starting at the first one
       const initialPhotos: PhotoData[] = positions.map((pos, index) => {
         const media = index % step === 0 ? DEFAULT_MEDIA[index / step] : undefined;
         return {
