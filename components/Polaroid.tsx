@@ -239,7 +239,7 @@ const Polaroid: React.FC<PolaroidProps> = ({
         <mesh position={[0, -0.65, 0.025]}>
           <planeGeometry args={[1.0, 1.0]} />
           <meshStandardMaterial 
-            map={texture} 
+            map={videoTexture ?? texture} 
             color={COLORS.POLAROID_FRAME}
             roughness={0.7}
             metalness={0.1}
