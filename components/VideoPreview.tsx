@@ -86,7 +86,7 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ url, caption, onClose }) =>
 
   return (
     <div
-      className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-300"
+      className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/90"
       onClick={onClose}
     >
       <div

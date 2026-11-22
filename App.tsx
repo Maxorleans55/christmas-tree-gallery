@@ -376,7 +376,10 @@ const App: React.FC = () => {
         <VideoPreview
           url={previewVideo.url}
           caption={previewVideo.caption}
-          onClose={() => setPreviewVideo(null)}
+          onClose={() => {
+            setPreviewVideo(null);
+            window.dispatchEvent(new Event('video-preview-close'));
+          }}
         />
       )}
       <Analytics />

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo } from 'react';
+import React, { useRef, useEffect, useMemo, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Stars, Environment, Sparkles, AdaptiveDpr, PerformanceMonitor } from '@react-three/drei';
 import * as THREE from 'three';
@@ -393,8 +393,22 @@ const Scene: React.FC<SceneProps> = ({
   recordingType = null,
   userName = ''
 }) => {
+  // Freeze the 3D scene while the video preview is open (keeps the player smooth)
+  const [paused, setPaused] = useState(false);
+  useEffect(() => {
+    const open = () => setPaused(true);
+    const close = () => setPaused(false);
+    window.addEventListener('video-preview', open);
+    window.addEventListener('video-preview-close', close);
+    return () => {
+      window.removeEventListener('video-preview', open);
+      window.removeEventListener('video-preview-close', close);
+    };
+  }, []);
+
   return (
     <Canvas
+      frameloop={paused ? 'demand' : 'always'}
       dpr={[1, 2]}
       camera={{ position: CAMERA_CONFIG.DEFAULT_POS, fov: CAMERA_CONFIG.FOV }}
       gl={{
