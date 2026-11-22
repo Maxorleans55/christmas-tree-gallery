@@ -1,6 +1,9 @@
 import React, { useRef, useState } from 'react';
 import { ControlMode, ZoomLevel, InteractionMode } from '../types';
-import { Mouse, Hand, ImagePlus, Music, VolumeX, Eye, EyeOff, Edit3, Instagram, Download, Maximize, Move, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Github, Video, Users } from 'lucide-react';
+import { Mouse, Hand, ImagePlus, Music, VolumeX, Eye, EyeOff, Edit3, Instagram, Download, Maximize, Move, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Globe, Video, Users } from 'lucide-react';
+
+// Put your deployed snow globe (christmas-3d) link here
+const GLOBE_URL = 'https://YOUR-GLOBE-APP.vercel.app';
 
 interface OverlayProps {
   controlMode: ControlMode;
@@ -458,16 +461,16 @@ const Overlay: React.FC<OverlayProps> = ({
 
                 <div className="w-px h-4 md:h-6 bg-white/10 mx-0.5"></div>
 
-                {/* GitHub Star Button */}
+                {/* Back to the snow globe */}
                 <button
-                  onClick={() => window.open('https://github.com/gracetyy/christmas-tree', '_blank')}
+                  onClick={() => window.open(GLOBE_URL, '_blank', 'noopener,noreferrer')}
                   className="flex items-center gap-1 md:gap-2 px-2.5 md:px-5 py-1.5 md:py-2 rounded-full text-[#f2e24e] hover:bg-white/10 transition-all"
-                  title="Star our repo!"
+                  title="Back to the snow globe"
                 >
-                  <Github className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                  <Globe className="w-3.5 h-3.5 md:w-4 md:h-4" />
                   <span className="text-[9px] md:text-sm font-medium whitespace-nowrap text-white/90">
-                    <span className="md:hidden">Star</span>
-                    <span className="hidden md:inline">Please star our repo! &lt;3</span>
+                    <span className="md:hidden">Globe</span>
+                    <span className="hidden md:inline">Back to the snow globe</span>
                   </span>
                 </button>
 
