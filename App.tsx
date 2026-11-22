@@ -3,6 +3,7 @@ import Scene from './components/Scene';
 import Overlay from './components/Overlay';
 import HandController from './components/HandController';
 import InstagramModal from './components/InstagramModal';
+import VideoPreview from './components/VideoPreview';
 import { generatePhotoPositions } from './utils/math';
 import { ControlMode, PhotoData, InteractionMode } from './types';
 import { DEFAULT_PHOTOS_COUNT, PLACEHOLDER_TYPES, DEFAULT_USER_NAME } from './constants';
@@ -118,6 +119,14 @@ const App: React.FC = () => {
     };
     window.addEventListener('photo-caption', handler);
     return () => window.removeEventListener('photo-caption', handler);
+  }, []);
+
+  // Video preview opened from a polaroid
+  const [previewVideo, setPreviewVideo] = useState<{ url: string; caption?: string } | null>(null);
+  useEffect(() => {
+    const handler = (e: Event) => setPreviewVideo((e as CustomEvent<{ url: string; caption?: string }>).detail);
+    window.addEventListener('video-preview', handler);
+    return () => window.removeEventListener('video-preview', handler);
   }, []);
 
   // Custom Hooks
@@ -362,6 +371,13 @@ const App: React.FC = () => {
             </button>
           </div>
         </div>
+      )}
+      {previewVideo && (
+        <VideoPreview
+          url={previewVideo.url}
+          caption={previewVideo.caption}
+          onClose={() => setPreviewVideo(null)}
+        />
       )}
       <Analytics />
     </div>

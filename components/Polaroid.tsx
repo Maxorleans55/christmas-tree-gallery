@@ -90,7 +90,7 @@ const Polaroid: React.FC<PolaroidProps> = ({
   }, [data.url, isVideo]);
 
   useFrame((state) => {
-        if (videoTexture) {
+    if (videoTexture) {
       const v = videoTexture.image as HTMLVideoElement;
       if (v.readyState >= 2 && v.currentTime !== (videoTexture as any).__lastTime) {
         (videoTexture as any).__lastTime = v.currentTime;
@@ -181,8 +181,11 @@ const Polaroid: React.FC<PolaroidProps> = ({
             fileInputRef.current.click();
         }
     } else {
-        // View Mode: Zoom to this photo
+        // View Mode: Zoom to this photo (videos also open the preview player)
         onPhotoClick(data);
+        if (isVideo) {
+          window.dispatchEvent(new CustomEvent('video-preview', { detail: { url: data.url, caption: data.caption } }));
+        }
     }
   };
 
@@ -246,7 +249,7 @@ const Polaroid: React.FC<PolaroidProps> = ({
         <mesh position={[0, -0.65, 0.025]}>
           <planeGeometry args={[1.0, 1.0]} />
           <meshStandardMaterial 
-            map={videoTexture ?? texture} 
+            map={videoTexture ?? texture}
             color={COLORS.POLAROID_FRAME}
             roughness={0.7}
             metalness={0.1}
