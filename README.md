@@ -78,4 +78,4 @@ The default media is personal. Keep the repository **private** and share only th
 
 ## Credits
 
-Based on [gracetyy/christmas-tree](https://github.com/gracetyy/christmas-tree) (MIT License), customized by Kay. See [LICENSE](LICENSE).
+Based on [gracetyy/christmas-tree](https://github.com/gracetyy/christmas-tree) (MIT License), customized by Maxorleans. See [LICENSE](LICENSE).
