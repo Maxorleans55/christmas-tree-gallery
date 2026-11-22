@@ -1,84 +1,81 @@
-# 🎄 Make your own 3D Christmas Tree with your photos!
+# Christmas Tree Gallery 🎄
 
-Transform your favorite memories into a magical, interactive 3D holiday experience! This project lets you create a beautiful, personalized Christmas tree decorated with your own photos.
+An interactive 3D Christmas tree that hangs photos and videos as polaroids. Spin it, zoom into a memory, add your own, and download a snapshot. Built as a personal Christmas gift, and part of a pair with the [3D snow globe greeting](https://github.com/Maxorleans55/christmas-3d), which links to this tree.
 
-**✨ Try it out live at: [https://www.christmas-tree.fun/](https://www.christmas-tree.fun/)**
+## Features
 
-## 🎥 Demo
+- **Photos and videos on the tree.** Videos play muted and looping on their polaroid and are center-cropped to fit.
+- **Default memories.** Ships with a set of photos and videos defined in `defaultMedia.ts`.
+- **Add, edit, delete.** Add single or bulk photos and videos (videos over 50 MB are skipped), edit captions, and delete polaroids in Edit mode.
+- **Your changes are saved** in the browser (IndexedDB), so the tree is still yours after a refresh.
+- **Custom title.** The heading defaults to the value of `DEFAULT_USER_NAME` in `constants.ts` and can be edited in the app.
+- **Mouse or hand-gesture control** (MediaPipe hand tracking via webcam).
+- **Presentation mode** to hide the UI, music, and PNG / video recording of the scene.
 
-<p>
-  <img src="./Duo.gif" alt="Demo 1 — scripting @duolingo Instagram as an example" width="360" />
-  <img src="./Duo2.gif" alt="Demo 2 — scripting @duolingo Instagram as an example" width="360" />
-</p>
+## Tech stack
 
-> Demo: scripting `@duolingo` Instagram as an example input for the Instagram import.
+React 18 · TypeScript · Vite 6 · React Three Fiber · drei · three.js · MediaPipe · idb-keyval · Tailwind CSS (CDN) · lucide-react
 
-## ✨ Features
+## Getting started
 
-- **📸 Your Photos, Your Tree**: Upload photos from your device or instantly import them from any **Instagram** profile!
-- **🖐️ Magic Hand Controls**: Control the camera with hand gestures in front of your webcam.
-- **🎬 Cinematic Videos**: Record high-quality videos of your tree (360° rotation or cinematic tour).
-- **🖼️ Instant Postcards**: Download a high-definition snapshot of your tree with a custom "Merry Christmas" greeting.
-- **👤 Personalized Greeting**: Enter your name to see a custom "Merry Christmas [Your Name]!" message.
+```bash
+npm install
+npm run dev
+```
 
----
+Open the URL Vite prints (default http://localhost:5173). To pick a port:
 
-## 🖐️ Hand Mode Tutorial
+```bash
+npm run dev -- --port 5174 --strictPort
+```
 
-Switch to **Hand Mode** in the bottom menu to control the tree with "magic":
+Production build:
 
-1. **Zoom In**: Open your palm with fingers spread 🖐️
-2. **Zoom Out / Reset**: Close your hand into a fist ✊
-3. **Move / Pan**: While your hand is open, move it around to look at different parts of the tree.
+```bash
+npm run build
+npm run preview
+```
 
-### 🧠 How Hand Mode Works (The "Principle")
-This feature uses **MediaPipe Hands**, a high-fidelity palm and finger tracking solution by Google. 
-- It works by performing real-time AI inference on your webcam feed.
-- It identifies **21 3D hand landmarks** (joints). 
-- Our script calculates the distance between your thumb and index finger, and counts how many fingers are curled, to translate those shapes into 3D camera movements in **Three.js**.
+## Customize the default media
 
----
+1. Put your files in `public/media/` (use H.264 `.mp4` for videos so every browser can play them).
+2. List them in `defaultMedia.ts`:
 
-## 📸 Instagram Import (How it works)
-When you enter a username:
-1. The app sends a request to a backend webhook powered by **[Bubble Lab](https://bubblelab.ai)** (YC W26 - the open-source, Typescript-native agentic workflow builder).
-2. Bubble Lab's service uses a **Headless Browser** to securely visit the public Instagram profile.
-3. It identifies the most recent high-quality image URLs from the profile's grid.
-4. These images are processed, optimized, and sent back to the app to be instantly "hung" as Polaroids on the 3D tree.
+```ts
+export const DEFAULT_MEDIA = [
+  { src: '/media/my-video.mp4', type: 'video', caption: 'A caption' },
+  { src: '/media/my-photo.jpg', type: 'image', caption: 'Another caption' },
+];
+```
 
----
+3. Media fills every second slot of the tree, starting from the first (see `App.tsx`). Other slots show placeholders that visitors can replace.
+4. Change the title in `constants.ts` (`DEFAULT_USER_NAME`).
 
-## 🚀 Quick Start (For Developers)
+**Already opened the app before changing the media?** The tree is saved in your browser. Bump `STORE_KEY` in `App.tsx` (for example `lumiere-tree-v4`) or clear the site data to reload the defaults.
 
-1. **Clone & Enter**:
-   ```bash
-   git clone https://github.com/gracetyy/christmas-tree.git
-   cd christmas-tree
-   ```
-2. **Install**:
-   ```bash
-   npm install
-   ```
-3. **Launch**:
-   ```bash
-   npm run dev
-   ```
-4. **View**: Open [http://localhost:3000](http://localhost:3000) in your browser.
+## Project structure
 
-### Environment Variables
-For local development, create a `.env` file in the root directory. For deployment, configure these in your platform (e.g., Vercel):
+```
+App.tsx              app state, saving, uploads
+defaultMedia.ts      default photos and videos
+constants.ts         colors, tree config, default title
+types.ts             shared types
+components/          Scene, TreeMesh, Polaroid, Overlay, Star, Snow, ...
+hooks/               tree interaction, audio, recording, hand control
+utils/math.ts        spiral placement of polaroids
+public/media/        your photos and videos
+```
 
-- `INSTAGRAM_WEBHOOK_URL`: The webhook endpoint URL for processing Instagram data imports.
+## Deploy (Vercel)
 
-You can use `.env.example` as a template.
+1. Push the repo to GitHub.
+2. Import it on [vercel.com](https://vercel.com). Framework: Vite, build command `npm run build`, output directory `dist`.
+3. Copy the deployed URL into the `TREE_URL` constant of the snow globe app so its button opens this tree.
 
----
+## Privacy
 
-## 🛠️ Built With
-- **React & Three.js (React Three Fiber)**: For rendering the 3D scene.
-- **MediaPipe**: For the AI hand gesture tracking.
-- **Bubble Lab (YC W26)**: Open-source, Typescript-native agentic workflow builder for the Instagram scraping and image processing API.
-- **Tailwind CSS**: For the user interface.
+The default media is personal. Keep the repository **private** and share only the deployed link with the person it is for.
 
-## 📄 License
-MIT License.
+## Credits
+
+Based on [gracetyy/christmas-tree](https://github.com/gracetyy/christmas-tree) (MIT License), customized by Kay. See [LICENSE](LICENSE).
