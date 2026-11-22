@@ -3,7 +3,7 @@ import { ControlMode, ZoomLevel, InteractionMode } from '../types';
 import { Mouse, Hand, ImagePlus, Music, VolumeX, Eye, EyeOff, Edit3, Instagram, Download, Maximize, Move, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Globe, Video, Users } from 'lucide-react';
 
 // Put your deployed snow globe (christmas-3d) link here
-const GLOBE_URL = 'https://YOUR-GLOBE-APP.vercel.app';
+const GLOBE_URL = 'https://christmas-3d-app-blond.vercel.app/';
 
 interface OverlayProps {
   controlMode: ControlMode;

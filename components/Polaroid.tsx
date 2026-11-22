@@ -59,7 +59,7 @@ const Polaroid: React.FC<PolaroidProps> = ({
     }
     const video = document.createElement('video');
     video.preload = 'auto';
-    video.style.cssText = 'position:fixed;width:2px;height:2px;opacity:0.01;pointer-events:none;left:0;top:0;';
+    video.style.cssText = 'position:fixed;width:32px;height:32px;right:0;bottom:0;z-index:-1;pointer-events:none;';
     document.body.appendChild(video);
     video.src = data.url;
     video.crossOrigin = 'anonymous';
@@ -90,6 +90,13 @@ const Polaroid: React.FC<PolaroidProps> = ({
   }, [data.url, isVideo]);
 
   useFrame((state) => {
+        if (videoTexture) {
+      const v = videoTexture.image as HTMLVideoElement;
+      if (v.readyState >= 2 && v.currentTime !== (videoTexture as any).__lastTime) {
+        (videoTexture as any).__lastTime = v.currentTime;
+        videoTexture.needsUpdate = true;
+      }
+    }
     const targetProgress = isExploded ? 1 : 0;
     const lerpFactor = isExploded ? 0.05 : 0.12; // Faster return
     explodeProgress.current = THREE.MathUtils.lerp(explodeProgress.current, targetProgress, lerpFactor);
