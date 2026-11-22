@@ -1,8 +1,8 @@
-import React, { useRef, useState, useMemo } from 'react';
+import React, { useRef, useState, useMemo, useEffect } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
-import { Html, useTexture } from '@react-three/drei';
-import { Trash2 } from 'lucide-react';
+import { Html, useTexture, Text } from '@react-three/drei';
+import { Trash2, Pencil } from 'lucide-react';
 import { COLORS, PLACEHOLDER_TYPES } from '../constants';
 import { PhotoData, ControlMode, InteractionMode } from '../types';
 import { generatePlaceholderTexture } from '../utils/math';
@@ -39,15 +39,51 @@ const Polaroid: React.FC<PolaroidProps> = ({
     return new THREE.Vector3(data.position[0], data.position[1], data.position[2]).normalize().multiplyScalar(15 + Math.random() * 10);
   }, [data.position]);
 
+  const isVideo = data.mediaType === 'video' && !!data.url;
+  const [videoTexture, setVideoTexture] = useState<THREE.VideoTexture | null>(null);
+
   const textureUrl = useMemo(() => {
-    if (data.url) return data.url;
+    if (data.url && !isVideo) return data.url;
     const type = data.placeholderType || PLACEHOLDER_TYPES.SNOWFLAKE;
-    const bg = '#2c3e50'; 
+    const bg = '#2c3e50';
     return generatePlaceholderTexture(type, bg, '#ffffff');
-  }, [data.url, data.placeholderType]);
+  }, [data.url, data.placeholderType, isVideo]);
 
   const texture = useTexture(textureUrl);
-  texture.center.set(0.5, 0.5); 
+  texture.center.set(0.5, 0.5);
+
+  useEffect(() => {
+    if (!isVideo) {
+      setVideoTexture(null);
+      return;
+    }
+    const video = document.createElement('video');
+    video.src = data.url;
+    video.crossOrigin = 'anonymous';
+    video.loop = true;
+    video.muted = true;
+    video.playsInline = true;
+    const tex = new THREE.VideoTexture(video);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    video.addEventListener('loadedmetadata', () => {
+      const aspect = video.videoWidth / video.videoHeight;
+      if (aspect > 1) {
+        tex.repeat.x = 1 / aspect;
+        tex.offset.x = (1 - tex.repeat.x) / 2;
+      } else {
+        tex.repeat.y = aspect;
+        tex.offset.y = (1 - tex.repeat.y) / 2;
+      }
+    });
+    video.play().catch(() => {});
+    setVideoTexture(tex);
+    return () => {
+      video.pause();
+      video.removeAttribute('src');
+      video.load();
+      tex.dispose();
+    };
+  }, [data.url, isVideo]);
 
   useFrame((state) => {
     const targetProgress = isExploded ? 1 : 0;
@@ -206,6 +242,21 @@ const Polaroid: React.FC<PolaroidProps> = ({
           />
         </mesh>
 
+        {/* Caption */}
+        {data.caption && (
+          <Text
+            position={[0, -1.34, 0.03]}
+            fontSize={0.09}
+            maxWidth={1.0}
+            color="#222222"
+            anchorX="center"
+            anchorY="middle"
+            textAlign="center"
+          >
+            {data.caption}
+          </Text>
+        )}
+
         {/* Backing */}
         <mesh position={[0, -0.75, -0.01]}>
            <planeGeometry args={[1.2, 1.5]} />
@@ -213,33 +264,49 @@ const Polaroid: React.FC<PolaroidProps> = ({
         </mesh>
       </group>
       
-      {/* Interaction UI (Hidden Input & Delete Button) - Only render when needed for performance */}
+      {/* Interaction UI (Hidden Input, Edit caption & Delete) - Only render when needed for performance */}
       {(hovered || (interactionMode === InteractionMode.EDIT && isZoomedIn)) && (
         <Html position={[0.5, -1.4, 0.1]} transform style={{ opacity: hovered ? 1 : 0, transition: 'opacity 0.2s', pointerEvents: hovered ? 'auto' : 'none' }}>
           <div className="flex gap-2" onPointerDown={(e) => e.stopPropagation()}>
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                style={{ display: 'none' }} 
-                accept="image/*" 
-                onChange={handleFileChange}
-              />
-              
-              {interactionMode === InteractionMode.EDIT && (
-                   <button
-                      onClick={(e) => {
-                          e.stopPropagation();
-                          // Prevent click from propagating to group
-                          e.preventDefault();
-                          onDelete(data.id);
-                      }}
-                      className="flex items-center justify-center w-8 h-8 rounded-full bg-red-600 text-white shadow-lg hover:bg-red-700 transition-colors"
-                      title="Delete Photo"
-                      style={{ pointerEvents: 'auto' }}
-                   >
-                      <Trash2 size={14} />
-                   </button>
-              )}
+            <input
+              type="file"
+              ref={fileInputRef}
+              style={{ display: 'none' }}
+              accept="image/*,video/*"
+              onChange={handleFileChange}
+            />
+
+            {interactionMode === InteractionMode.EDIT && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    const caption = window.prompt('Caption for this photo:', data.caption ?? '');
+                    if (caption !== null) {
+                      window.dispatchEvent(new CustomEvent('photo-caption', { detail: { id: data.id, caption } }));
+                    }
+                  }}
+                  className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 transition-colors"
+                  title="Edit caption"
+                  style={{ pointerEvents: 'auto' }}
+                >
+                  <Pencil size={14} />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    onDelete(data.id);
+                  }}
+                  className="flex items-center justify-center w-8 h-8 rounded-full bg-red-600 text-white shadow-lg hover:bg-red-700 transition-colors"
+                  title="Delete Photo"
+                  style={{ pointerEvents: 'auto' }}
+                >
+                  <Trash2 size={14} />
+                </button>
+              </>
+            )}
           </div>
         </Html>
       )}

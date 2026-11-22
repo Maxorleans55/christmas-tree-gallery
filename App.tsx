@@ -5,7 +5,7 @@ import HandController from './components/HandController';
 import InstagramModal from './components/InstagramModal';
 import { generatePhotoPositions } from './utils/math';
 import { ControlMode, PhotoData, InteractionMode } from './types';
-import { DEFAULT_PHOTOS_COUNT, PLACEHOLDER_TYPES } from './constants';
+import { DEFAULT_PHOTOS_COUNT, PLACEHOLDER_TYPES, DEFAULT_USER_NAME } from './constants';
 import { useAudio } from './hooks/useAudio';
 import { useRecording } from './hooks/useRecording';
 import { useInstagram } from './hooks/useInstagram';
@@ -14,14 +14,44 @@ import { useVisitCounter } from './hooks/useVisitCounter';
 import { processImageWithPadding } from './utils/image';
 import { AlertCircle, CheckCircle2, X } from 'lucide-react';
 import { Analytics } from '@vercel/analytics/react';
+import { get, set } from 'idb-keyval';
+import { DEFAULT_MEDIA } from './defaultMedia';
+
+const STORE_KEY = 'lumiere-tree-v2'; // bump the number to force everyone back to the defaults
+const MAX_VIDEO_MB = 50;
+
+const serializePhotos = (photos: PhotoData[]) =>
+  Promise.all(
+    photos.map(async (p) => {
+      if (p.url.startsWith('blob:')) {
+        const blob = await (await fetch(p.url)).blob();
+        return { ...p, url: '', blob };
+      }
+      return p;
+    })
+  );
+
+const deserializePhotos = (saved: any[]): PhotoData[] =>
+  saved.map(({ blob, ...p }) => (blob ? { ...p, url: URL.createObjectURL(blob) } : p));
+
+const buildMedia = async (file: File) => {
+  if (file.type.startsWith('video/')) {
+    return { url: URL.createObjectURL(file), mediaType: 'video' as const };
+  }
+  const rawUrl = URL.createObjectURL(file);
+  const url = await processImageWithPadding(rawUrl);
+  if (url !== rawUrl) URL.revokeObjectURL(rawUrl);
+  return { url, mediaType: 'image' as const };
+};
 
 const App: React.FC = () => {
   const [controlMode, setControlMode] = useState<ControlMode>(ControlMode.MOUSE);
   const [interactionMode, setInteractionMode] = useState<InteractionMode>(InteractionMode.VIEW);
   const [photos, setPhotos] = useState<PhotoData[]>([]);
-  const [userName, setUserName] = useState('');
-  const [isNameSet, setIsNameSet] = useState(false);
+  const [userName, setUserName] = useState(DEFAULT_USER_NAME);
+  const [isNameSet, setIsNameSet] = useState(true); // true hides the "What's your name?" prompt
   const [isHandReady, setIsHandReady] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' } | null>(null);
 
   const visitCount = useVisitCounter();
@@ -33,23 +63,61 @@ const App: React.FC = () => {
 
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Initialize Photos
+  // Initialize Photos (saved tree first, otherwise defaults)
   useEffect(() => {
-    const positions = generatePhotoPositions(DEFAULT_PHOTOS_COUNT);
-    const initialPhotos: PhotoData[] = positions.map((pos, index) => {
-      // Rotate through placeholder types
-      const types = Object.values(PLACEHOLDER_TYPES);
-      const type = types[index % types.length];
+    (async () => {
+      try {
+        const saved = await get(STORE_KEY);
+        if (saved && saved.length) {
+          setPhotos(deserializePhotos(saved));
+          setLoaded(true);
+          return;
+        }
+      } catch (e) {
+        console.warn('Could not load saved tree', e);
+      }
 
-      return {
-        id: `photo-${index}`,
-        url: '', // Empty means use placeholder
-        placeholderType: type,
-        position: pos.position,
-        rotation: pos.rotation
-      };
-    });
-    setPhotos(initialPhotos);
+      const positions = generatePhotoPositions(DEFAULT_PHOTOS_COUNT);
+      const types = Object.values(PLACEHOLDER_TYPES);
+      const step = Math.max(1, Math.floor(DEFAULT_PHOTOS_COUNT / Math.max(1, DEFAULT_MEDIA.length)));
+      const initialPhotos: PhotoData[] = positions.map((pos, index) => {
+        const media = index % step === 0 ? DEFAULT_MEDIA[index / step] : undefined;
+        return {
+          id: `photo-${index}`,
+          url: media ? media.src : '',
+          mediaType: media ? media.type : undefined,
+          caption: media?.caption,
+          placeholderType: types[index % types.length],
+          position: pos.position,
+          rotation: pos.rotation
+        };
+      });
+      setPhotos(initialPhotos);
+      setLoaded(true);
+    })();
+  }, []);
+
+  // Save every change
+  useEffect(() => {
+    if (!loaded) return;
+    const timer = setTimeout(async () => {
+      try {
+        await set(STORE_KEY, await serializePhotos(photos));
+      } catch (e) {
+        console.warn('Could not save tree', e);
+      }
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [photos, loaded]);
+
+  // Caption edits sent from the 3D polaroids
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { id, caption } = (e as CustomEvent<{ id: string; caption: string }>).detail;
+      setPhotos(prev => prev.map(p => (p.id === id ? { ...p, caption } : p)));
+    };
+    window.addEventListener('photo-caption', handler);
+    return () => window.removeEventListener('photo-caption', handler);
   }, []);
 
   // Custom Hooks
@@ -138,35 +206,30 @@ const App: React.FC = () => {
   };
 
   const handleSingleUpload = async (id: string, file: File) => {
-    const rawUrl = URL.createObjectURL(file);
-    const url = await processImageWithPadding(rawUrl);
-    
-    // Revoke the raw object URL if we created a new data URL
-    if (url !== rawUrl) {
-      URL.revokeObjectURL(rawUrl);
+    if (file.type.startsWith('video/') && file.size > MAX_VIDEO_MB * 1024 * 1024) {
+      showToast(`Videos must be under ${MAX_VIDEO_MB} MB.`, 'error');
+      return;
     }
-    
+    const media = await buildMedia(file);
     const photoToUpdate = photos.find(p => p.id === id);
     if (photoToUpdate) {
-      const updatedPhoto = { ...photoToUpdate, url };
-      setPhotos(prev => prev.map(p => p.id === id ? updatedPhoto : p));
-      
-      // Switch to VIEW mode and focus
+      const updatedPhoto = { ...photoToUpdate, ...media };
+      setPhotos(prev => prev.map(p => (p.id === id ? updatedPhoto : p)));
       setInteractionMode(InteractionMode.VIEW);
       handlePhotoClick(updatedPhoto);
     }
   };
 
   const handleBulkUpload = async (files: FileList) => {
-    const newFiles = Array.from(files);
+    const all = Array.from(files);
+    const newFiles = all.filter(f => !(f.type.startsWith('video/') && f.size > MAX_VIDEO_MB * 1024 * 1024));
+    if (newFiles.length < all.length) showToast(`Skipped videos over ${MAX_VIDEO_MB} MB.`, 'error');
 
-    // Distribute uploaded files into existing slots
     const newPhotos = [...photos];
-    
-    // Sort indices by Y descending to fill from top to bottom
+    // Fill empty slots first (top to bottom); defaults are only replaced once no empty slots remain
     const sortedIndices = newPhotos
-      .map((p, i) => ({ y: p.position[1], index: i }))
-      .sort((a, b) => b.y - a.y)
+      .map((p, i) => ({ y: p.position[1], index: i, filled: p.url ? 1 : 0 }))
+      .sort((a, b) => a.filled - b.filled || b.y - a.y)
       .map(item => item.index);
 
     let fileIndex = 0;
@@ -174,25 +237,14 @@ const App: React.FC = () => {
 
     for (const index of sortedIndices) {
       if (fileIndex >= newFiles.length) break;
-      
-      const rawUrl = URL.createObjectURL(newFiles[fileIndex]);
-      const url = await processImageWithPadding(rawUrl);
-      
-      // Revoke the raw object URL if we created a new data URL
-      if (url !== rawUrl) {
-        URL.revokeObjectURL(rawUrl);
-      }
-      
-      newPhotos[index] = { ...newPhotos[index], url };
-      
+      const media = await buildMedia(newFiles[fileIndex]);
+      newPhotos[index] = { ...newPhotos[index], ...media };
       lastAddedPhoto = newPhotos[index];
       fileIndex++;
     }
-    
+
     setPhotos(newPhotos);
-    
     if (lastAddedPhoto) {
-      // Switch to VIEW mode and focus
       setInteractionMode(InteractionMode.VIEW);
       handlePhotoClick(lastAddedPhoto);
     }

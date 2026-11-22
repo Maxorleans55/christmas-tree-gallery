@@ -15,7 +15,9 @@ export enum InteractionMode {
 
 export interface PhotoData {
   id: string;
-  url: string; // Data URL or Image URL
+  url: string; // Data URL, blob URL or file path
+  mediaType?: 'image' | 'video';
+  caption?: string;
   placeholderType?: 'snowflake' | 'bell' | 'tree';
   position: [number, number, number]; // x, y, z
   rotation: [number, number, number]; // x, y, z

@@ -62,6 +62,9 @@ export const PLACEHOLDER_TYPES = {
 
 export const DEFAULT_PHOTOS_COUNT = 30;
 
+// Name shown in the title: "Merry Christmas <name>!"
+export const DEFAULT_USER_NAME = 'Jenny 💕 and Kay ❤️';
+
 export const INSTAGRAM_WEBHOOK_URL = process.env.INSTAGRAM_WEBHOOK_URL || '';
 
 if (!INSTAGRAM_WEBHOOK_URL) {

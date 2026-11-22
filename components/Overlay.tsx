@@ -95,7 +95,7 @@ const Overlay: React.FC<OverlayProps> = ({
           ctx.fillText(`Merry Christmas${userName ? ` ${userName}` : ''}!`, tempCanvas.width / 2, canvas.height * 0.05);
 
           const link = document.createElement('a');
-          link.download = `merry-christmas-${userName || 'tree'}.png`;
+          link.download = `merry-christmas-${userName.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '') || 'tree'}.png`;
           link.href = tempCanvas.toDataURL('image/png');
           link.click();
         }
@@ -411,20 +411,6 @@ const Overlay: React.FC<OverlayProps> = ({
 
                 <div className="w-px h-4 md:h-6 bg-white/10 mx-0.5"></div>
 
-                {/* Instagram Import */}
-                <button
-                  onClick={onOpenInstagram}
-                  className="flex items-center gap-1 md:gap-2 px-2.5 md:px-5 py-1.5 md:py-2 rounded-full transition-all text-white hover:bg-white/10"
-                >
-                  <Instagram className="w-3.5 h-3.5 md:w-4 md:h-4 text-[#fd1d1d]" />
-                  <span className="text-[9px] md:text-sm font-medium whitespace-nowrap text-white/90">
-                    <span className="md:hidden">Instagram</span>
-                    <span className="hidden md:inline">Import from Instagram</span>
-                  </span>
-                </button>
-
-                <div className="w-px h-4 md:h-6 bg-white/10 mx-0.5"></div>
-
                 {/* Video Download Dropdown */}
                 <div className="relative group">
                   <button
@@ -490,7 +476,7 @@ const Overlay: React.FC<OverlayProps> = ({
                   multiple
                   ref={fileInputRef}
                   className="hidden"
-                  accept="image/*"
+                  accept="image/*,video/*"
                   onChange={(e) => e.target.files && onBulkUpload(e.target.files)}
                 />
 
