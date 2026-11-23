@@ -17,11 +17,14 @@ export const COLORS = {
   RIBBON: '#F5F5F5',
 };
 
+// Phones get a lighter scene (fewer particles, lower resolution)
+export const IS_MOBILE = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
 // --- Dimensions & Geometry ---
 export const TREE_CONFIG = {
   HEIGHT: 14, // Slightly taller for elegance
   RADIUS_BOTTOM: 6,
-  PARTICLE_COUNT: 20000, // Significantly increased for maximum density
+  PARTICLE_COUNT: IS_MOBILE ? 6000 : 12000, // lower than the original 20000 for smoother playback
   PARTICLE_SIZE: 0.3, // Increased size for more prominent shapes
   COLLISION_RADIUS: 0.5, // Radius to prevent overlap with photos
 };

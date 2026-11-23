@@ -13,6 +13,20 @@ import Snow from './Snow';
 import { CAMERA_CONFIG, COLORS, GESTURE_THRESHOLDS, IS_MOBILE } from '../constants';
 import { PhotoData, ControlMode, ZoomLevel, InteractionMode } from '../types';
 
+// If the lighting image ever fails to load, keep the scene running without it
+class EnvGuard extends React.Component<{ children: React.ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch(err: unknown) {
+    console.warn('Environment lighting failed to load, continuing without it:', err);
+  }
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
+
 interface SceneProps {
   photos: PhotoData[];
   onUpload: (id: string, file: File) => void;
@@ -434,7 +448,9 @@ const Scene: React.FC<SceneProps> = ({
       />
 
       {/* City preset gives nice reflections for shiny objects */}
-      <Environment preset="city" background={false} environmentIntensity={1.0} />
+      <EnvGuard>
+        <Environment files="./potsdamer_platz_1k.hdr" background={false} environmentIntensity={1.0} />
+      </EnvGuard>
 
       {/* Lighting Setup */}
       <ambientLight intensity={0.1} />
