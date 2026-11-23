@@ -36,6 +36,34 @@ export const useAudio = () => {
         return removeListeners;
     }, []);
 
+    // Pause the music when another app (the snow globe) takes over, resume when we come back
+    const resumeOnReturn = useRef(false);
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio) return;
+
+        const stop = () => {
+            if (!audio.paused) {
+                resumeOnReturn.current = true;
+                audio.pause();
+                setIsMusicPlaying(false);
+            }
+        };
+        const onVisible = () => {
+            if (document.visibilityState === 'visible' && resumeOnReturn.current) {
+                resumeOnReturn.current = false;
+                audio.play().then(() => setIsMusicPlaying(true)).catch(() => {});
+            }
+        };
+
+        window.addEventListener('stop-music', stop);
+        document.addEventListener('visibilitychange', onVisible);
+        return () => {
+            window.removeEventListener('stop-music', stop);
+            document.removeEventListener('visibilitychange', onVisible);
+        };
+    }, []);
+
     const toggleMusic = () => {
         if (!audioRef.current) return;
 
