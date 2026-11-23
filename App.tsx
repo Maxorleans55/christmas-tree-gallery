@@ -4,6 +4,7 @@ import Overlay from './components/Overlay';
 import HandController from './components/HandController';
 import InstagramModal from './components/InstagramModal';
 import VideoPreview from './components/VideoPreview';
+import InstallPrompt from './components/InstallPrompt';
 import { generatePhotoPositions } from './utils/math';
 import { ControlMode, PhotoData, InteractionMode } from './types';
 import { DEFAULT_PHOTOS_COUNT, PLACEHOLDER_TYPES, DEFAULT_USER_NAME } from './constants';
@@ -382,6 +383,7 @@ const App: React.FC = () => {
           }}
         />
       )}
+      <InstallPrompt />
       <Analytics />
     </div>
   );
