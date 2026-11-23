@@ -14,3 +14,10 @@ root.render(
     <App />
   </React.StrictMode>
 );
+
+// Register the service worker (production only, so local development is never cached)
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
