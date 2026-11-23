@@ -21,3 +21,22 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
   });
 }
+
+// Hide the launch splash once the 3D scene has started (and the animation has had time to play)
+(() => {
+  const splash = document.getElementById('splash');
+  if (!splash) return;
+  const MIN_MS = 3200;   // let the animation play
+  const MAX_MS = 9000;   // never block the app longer than this
+  const start = performance.now();
+  let done = false;
+  const hide = () => {
+    if (done) return;
+    done = true;
+    splash.classList.add('hide');
+    setTimeout(() => splash.remove(), 1200);
+  };
+  const tryHide = () => setTimeout(hide, Math.max(0, MIN_MS - (performance.now() - start)));
+  window.addEventListener('tree-ready', tryHide, { once: true });
+  setTimeout(hide, MAX_MS);
+})();

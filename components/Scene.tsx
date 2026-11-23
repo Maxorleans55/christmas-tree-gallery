@@ -10,7 +10,7 @@ import Polaroid from './Polaroid';
 import Star from './Star';
 import Presents from './Presents';
 import Snow from './Snow';
-import { CAMERA_CONFIG, COLORS, GESTURE_THRESHOLDS } from '../constants';
+import { CAMERA_CONFIG, COLORS, GESTURE_THRESHOLDS, IS_MOBILE } from '../constants';
 import { PhotoData, ControlMode, ZoomLevel, InteractionMode } from '../types';
 
 interface SceneProps {
@@ -39,7 +39,7 @@ const SceneEffects: React.FC<{
   photos: PhotoData[];
 }> = () => {
   return (
-    <EffectComposer disableNormalPass multisampling={4}>
+    <EffectComposer disableNormalPass multisampling={IS_MOBILE ? 0 : 2}>
       <Bloom 
         intensity={0.5} 
         luminanceThreshold={0.9} 
@@ -346,7 +346,7 @@ const PostProcessingEffects: React.FC<{
   });
 
   return (
-    <EffectComposer disableNormalPass multisampling={0}>
+    <EffectComposer disableNormalPass multisampling={IS_MOBILE ? 0 : 2}>
       {/* 
          Selective Bloom:
          Only pixels with luminance > 1.0 will bloom.
@@ -409,7 +409,8 @@ const Scene: React.FC<SceneProps> = ({
   return (
     <Canvas
       frameloop={paused ? 'demand' : 'always'}
-      dpr={[1, 2]}
+      dpr={IS_MOBILE ? 1 : [1, 1.5]}
+      onCreated={() => window.dispatchEvent(new Event('tree-ready'))}
       camera={{ position: CAMERA_CONFIG.DEFAULT_POS, fov: CAMERA_CONFIG.FOV }}
       gl={{
         antialias: true,
@@ -444,7 +445,7 @@ const Scene: React.FC<SceneProps> = ({
       {/* Rim Light for shape definition */}
       <spotLight position={[0, 30, 0]} intensity={1} angle={0.5} penumbra={1} color="#ffffff" />
 
-      <Stars radius={100} depth={50} count={3000} factor={4} saturation={0} fade speed={1} />
+      <Stars radius={100} depth={50} count={IS_MOBILE ? 800 : 1500} factor={4} saturation={0} fade speed={1} />
 
       {/* Global Snow Effect */}
       <Snow isExploded={isExploded} />
