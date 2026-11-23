@@ -23,7 +23,7 @@ interface OverlayProps {
   setUserName: (name: string) => void;
   isNameSet: boolean;
   setIsNameSet: (set: boolean) => void;
-  onRecordVideo: (type: 'FULL' | 'ALBUM') => void;
+  onRecordVideo: (type: 'FULL' | 'ALBUM') => void; onStopRecording?: () => void;
   isRecording: boolean;
   isExploded?: boolean;
   visitCount: number;
@@ -54,7 +54,7 @@ const Overlay: React.FC<OverlayProps> = ({
   setUserName,
   isNameSet,
   setIsNameSet,
-  onRecordVideo,
+  onRecordVideo, onStopRecording,
   isRecording,
   isExploded,
   visitCount
@@ -126,7 +126,7 @@ const Overlay: React.FC<OverlayProps> = ({
   return (
     <div id="overlay-container" className="absolute inset-0 pointer-events-none z-50 flex flex-col justify-between p-4 md:p-6">
       
-      {/* Visit Counter - Top Right */}
+      {isRecording && onStopRecording && (<button onClick={onStopRecording} className='absolute bottom-6 left-1/2 -translate-x-1/2 pointer-events-auto flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-red-600 hover:bg-red-500 text-white text-sm font-semibold shadow-[0_8px_30px_rgba(220,38,38,0.5)] border border-white/20 transition-colors z-[100]' title='Stop the tour and save the video'><span className='w-2.5 h-2.5 rounded-sm bg-white' />Stop<span className='w-2 h-2 rounded-full bg-white/80 animate-pulse' /></button>)} {/* Visit Counter - Top Right */}
       {!isRecording && showUI && (
         <div className="absolute top-6 right-6 pointer-events-auto flex items-center gap-2 bg-white/5 backdrop-blur-md rounded-full px-3 py-1.5 border border-white/10 shadow-lg animate-in fade-in slide-in-from-right-2 duration-700">
           <Users className="w-3.5 h-3.5 text-[#fff1a1]" />

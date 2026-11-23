@@ -132,7 +132,7 @@ const App: React.FC = () => {
 
   // Custom Hooks
   const { isMusicPlaying, toggleMusic, audioRef } = useAudio();
-  const { isRecording, recordingType, handleRecordVideo } = useRecording(photos, (msg) => showToast(msg, 'error'));
+  const { isRecording, recordingType, handleRecordVideo, stopRecording } = useRecording(photos, (msg) => showToast(msg, 'error'));
   const {
     isInstaModalOpen,
     setIsInstaModalOpen,
@@ -313,7 +313,7 @@ const App: React.FC = () => {
         setUserName={setUserName}
         isNameSet={isNameSet}
         setIsNameSet={setIsNameSet}
-        onRecordVideo={handleRecordVideo}
+        onRecordVideo={handleRecordVideo} onStopRecording={stopRecording}
         isRecording={isRecording}
         isExploded={isExploded}
         visitCount={visitCount}
