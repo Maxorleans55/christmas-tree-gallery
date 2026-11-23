@@ -463,7 +463,7 @@ const Overlay: React.FC<OverlayProps> = ({
 
                 {/* Back to the snow globe */}
                 <button
-                  onClick={() => window.open(GLOBE_URL, '_blank', 'noopener,noreferrer')}
+                  onClick={() => { window.dispatchEvent(new Event('stop-music')); window.open(GLOBE_URL, '_blank', 'noopener,noreferrer'); }}
                   className="flex items-center gap-1 md:gap-2 px-2.5 md:px-5 py-1.5 md:py-2 rounded-full text-[#f2e24e] hover:bg-white/10 transition-all"
                   title="Back to the snow globe"
                 >
