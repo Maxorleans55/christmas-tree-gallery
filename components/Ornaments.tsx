@@ -66,8 +66,12 @@ const makeDoveBody = () =>
     paint(place(new THREE.TorusGeometry(0.2, 0.035, 6, 16, Math.PI), 0.0, -0.18, 0, 0, 0, Math.PI), '#f08a24'), // feet bar (tiny)
   ]);
 
+// Spread wing for flight: extends sideways (+z) from the shoulder, thin in y
 const makeWing = () =>
-  merge([paint(place(new THREE.SphereGeometry(0.3, 12, 8), -0.08, 0.02, 0.25, 0, 0, -0.12, 1.2, 0.85, 0.22), '#d9dfe4')]);
+  merge([
+    paint(place(new THREE.SphereGeometry(0.3, 12, 8), -0.1, 0, 0.5, 0, 0, 0, 1.0, 0.13, 1.55), '#f2f5f4'),
+    paint(place(new THREE.SphereGeometry(0.2, 10, 6), -0.28, -0.005, 0.85, 0, 0, 0, 0.85, 0.09, 1.2), '#d5dce1'), // feather tips
+  ]);
 
 const makeBerries = () => {
   const parts: THREE.BufferGeometry[] = [];
@@ -123,31 +127,49 @@ const surfaceSpots = (count: number, seed0: number, yMin: number, yMax: number, 
 };
 
 // ---------- components ----------
-const Dove: React.FC<{ spot: Spot; flip?: boolean }> = ({ spot, flip }) => {
-  const body = useMemo(makeDoveBody, []);
-  const wing = useMemo(makeWing, []);
-  const wingL = useRef<THREE.Mesh>(null);
-  const wingR = useRef<THREE.Mesh>(null);
-  const grp = useRef<THREE.Group>(null);
+interface FlyProps {
+  body: THREE.BufferGeometry;
+  wing: THREE.BufferGeometry;
+  radius: number;   // distance from the tree's centre line
+  y: number;        // cruising height
+  speed: number;    // radians per second around the tree
+  dir: 1 | -1;      // which way round
+  phase: number;
+  bob?: number;
+}
+
+const FlyingDove: React.FC<FlyProps> = ({ body, wing, radius, y, speed, dir, phase, bob = 0.5 }) => {
+  const root = useRef<THREE.Group>(null);
+  const lean = useRef<THREE.Group>(null);
+  const wingR = useRef<THREE.Group>(null);
+  const wingL = useRef<THREE.Group>(null);
   useFrame((s) => {
-    const t = s.clock.elapsedTime + spot.seed;
-    const flap = Math.sin(t * 1.6) > 0.92 ? Math.sin(t * 22) * 0.35 : 0; // occasional flutter
-    if (wingL.current) wingL.current.rotation.x = flap;
-    if (wingR.current) wingR.current.rotation.x = -flap;
-    if (grp.current) grp.current.position.y = Math.sin(t * 1.2) * 0.02;
+    const t = s.clock.elapsedTime;
+    const a = phase + t * speed * dir;
+    const cx = Math.cos(a), sz = Math.sin(a);
+    const rise = Math.sin(t * 0.8 + phase * 2);
+    if (root.current) {
+      root.current.position.set(cx * radius, y + rise * bob, sz * radius);
+      // face the direction of travel (the dove points along +x)
+      root.current.rotation.y = -Math.atan2(dir * cx, -dir * sz);
+      root.current.rotation.z = Math.cos(t * 0.8 + phase * 2) * 0.12; // nose up on the way up
+    }
+    if (lean.current) lean.current.rotation.x = dir * 0.22 + Math.sin(t * 1.3 + phase) * 0.05; // bank into the turn
+    const flap = Math.sin(t * 10 + phase * 3) * 0.7 - 0.05;
+    if (wingR.current) wingR.current.rotation.x = flap;
+    if (wingL.current) wingL.current.rotation.x = flap; // mirrored group, so both wings beat together
   });
+  const bodyMat = <meshStandardMaterial vertexColors roughness={0.55} metalness={0} emissive="#ffffff" emissiveIntensity={0.14} />;
   return (
-    <group position={spot.pos} rotation={[0, spot.yaw + (flip ? Math.PI * 0.85 : Math.PI * 0.15), 0]} scale={spot.s * 1.15}>
-      <group ref={grp}>
-        <mesh geometry={body}>
-          <meshStandardMaterial vertexColors roughness={0.55} metalness={0} emissive="#ffffff" emissiveIntensity={0.12} />
-        </mesh>
-        <mesh ref={wingL} geometry={wing}>
-          <meshStandardMaterial vertexColors roughness={0.6} emissive="#ffffff" emissiveIntensity={0.1} />
-        </mesh>
-        <mesh ref={wingR} geometry={wing} scale={[1, 1, -1]}>
-          <meshStandardMaterial vertexColors roughness={0.6} emissive="#ffffff" emissiveIntensity={0.1} />
-        </mesh>
+    <group ref={root} scale={1.25}>
+      <group ref={lean}>
+        <mesh geometry={body}>{bodyMat}</mesh>
+        <group ref={wingR} position={[0, 0.12, 0.1]}>
+          <mesh geometry={wing}>{bodyMat}</mesh>
+        </group>
+        <group ref={wingL} position={[0, 0.12, -0.1]} scale={[1, 1, -1]}>
+          <mesh geometry={wing}>{bodyMat}</mesh>
+        </group>
       </group>
     </group>
   );
@@ -189,24 +211,17 @@ const Ornaments: React.FC<OrnamentsProps> = ({ isExploded = false, photos = [] }
   const photoKey = photos.map((p) => p.position.join(',')).join('|');
   const layout = useMemo(() => {
     const taken: THREE.Vector3[] = [];
-    const centres = surfaceSpots(2, 11, 0.38, 0.72, taken, photos, 5);
-    const doves: Spot[] = [];
-    centres.forEach((c) => {
-      // two doves side by side along the branch, facing each other
-      const tx = -Math.sin(Math.atan2(c.pos.z, c.pos.x)), tz = Math.cos(Math.atan2(c.pos.z, c.pos.x));
-      [-1, 1].forEach((k) =>
-        doves.push({ ...c, pos: new THREE.Vector3(c.pos.x + tx * 0.55 * k, c.pos.y, c.pos.z + tz * 0.55 * k), seed: c.seed + (k > 0 ? 3 : 0) })
-      );
-    });
     const bells = surfaceSpots(IS_SMALL ? 10 : 14, 40, 0.1, 0.88, taken, photos, 1.5);
     const canes = surfaceSpots(8, 90, 0.1, 0.85, taken, photos, 1.4);
     const holly = surfaceSpots(9, 150, 0.08, 0.9, taken, photos, 1.2);
-    return { doves, bells, canes, holly };
+    return { bells, canes, holly };
   }, [photoKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const bellGeo = useMemo(makeBell, []);
   const caneGeo = useMemo(makeCandyCane, []);
   const hollyGeo = useMemo(makeBerries, []);
+  const doveBody = useMemo(makeDoveBody, []);
+  const doveWing = useMemo(makeWing, []);
 
   useFrame(() => {
     scale.current = THREE.MathUtils.lerp(scale.current, isExploded ? 0 : 1, 0.1);
@@ -222,9 +237,11 @@ const Ornaments: React.FC<OrnamentsProps> = ({ isExploded = false, photos = [] }
       <Instances geometry={bellGeo} spots={layout.bells} metal={0.75} rough={0.28} swing lift={-0.1} />
       <Instances geometry={caneGeo} spots={layout.canes} rough={0.4} swing tilt={0.15} />
       <Instances geometry={hollyGeo} spots={layout.holly} rough={0.5} />
-      {layout.doves.map((d, i) => (
-        <Dove key={i} spot={d} flip={i % 2 === 0} />
-      ))}
+      {/* two pairs of turtle doves circling the tree in opposite directions */}
+      <FlyingDove body={doveBody} wing={doveWing} radius={5.8} y={-1.6} speed={0.3} dir={1} phase={0} />
+      <FlyingDove body={doveBody} wing={doveWing} radius={5.8} y={-1.35} speed={0.3} dir={1} phase={0.34} />
+      <FlyingDove body={doveBody} wing={doveWing} radius={4.7} y={2.4} speed={0.38} dir={-1} phase={2.4} bob={0.4} />
+      <FlyingDove body={doveBody} wing={doveWing} radius={4.7} y={2.7} speed={0.38} dir={-1} phase={2.74} bob={0.4} />
     </group>
   );
 };
