@@ -21,6 +21,11 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ url, caption, onClose }) =>
   const [muted, setMuted] = useState(false);
   const [time, setTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [failed, setFailed] = useState(false);
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  // Put keyboard focus on Close so Tab/Enter work straight away
+  useEffect(() => { closeRef.current?.focus(); }, []);
 
   // Start playing with sound (the click that opened this counts as a user gesture)
   useEffect(() => {
@@ -86,7 +91,11 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ url, caption, onClose }) =>
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={caption || 'Video preview'}
       className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/90"
+      style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
       onClick={onClose}
     >
       <div
@@ -103,9 +112,11 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ url, caption, onClose }) =>
             </h3>
           </div>
           <button
+            ref={closeRef}
             onClick={onClose}
-            className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+            className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f2e24e]"
             title="Close (Esc)"
+            aria-label="Close video"
           >
             <X className="w-4 h-4" />
           </button>
@@ -123,8 +134,15 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ url, caption, onClose }) =>
             onPause={() => setPlaying(false)}
             onTimeUpdate={(e) => setTime(e.currentTarget.currentTime)}
             onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+            onError={() => setFailed(true)}
           />
-          {!playing && (
+          {failed && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/80 px-6 text-center" role="alert">
+              <p className="text-white text-sm">This video couldn't be played.</p>
+              <p className="text-white/60 text-xs">Try another one, or check your connection.</p>
+            </div>
+          )}
+          {!playing && !failed && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="w-16 h-16 rounded-full bg-black/50 backdrop-blur border border-white/30 flex items-center justify-center">
                 <Play className="w-7 h-7 text-white ml-1" />
@@ -134,7 +152,7 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ url, caption, onClose }) =>
         </div>
 
         {/* Controls */}
-        <div className="px-5 pt-3 pb-4 bg-gradient-to-t from-white/10 to-transparent">
+        <div className="px-5 pt-3 pb-4 bg-gradient-to-t from-white/10 to-transparent" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
           <input
             type="range"
             min={0}
@@ -142,6 +160,7 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ url, caption, onClose }) =>
             step={0.1}
             value={time}
             onChange={seek}
+            aria-label="Seek"
             className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-[#f2e24e]"
             style={{
               background: `linear-gradient(to right, #f2e24e ${progress}%, rgba(255,255,255,0.2) ${progress}%)`,
@@ -149,20 +168,20 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({ url, caption, onClose }) =>
           />
           <div className="flex items-center justify-between mt-3 text-white/90">
             <div className="flex items-center gap-2">
-              <button onClick={toggle} className="p-2.5 rounded-full bg-[#f2e24e] text-black hover:scale-105 transition-transform" title="Play / Pause (Space)">
+              <button onClick={toggle} className="p-3 rounded-full bg-[#f2e24e] text-black hover:scale-105 transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-white" title="Play / Pause (Space)" aria-label={playing ? 'Pause' : 'Play'}>
                 {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
               </button>
-              <button onClick={replay} className="p-2 rounded-full hover:bg-white/10" title="Replay">
+              <button onClick={replay} className="p-2.5 rounded-full hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f2e24e]" title="Replay" aria-label="Replay">
                 <RotateCcw className="w-4 h-4" />
               </button>
-              <button onClick={toggleMute} className="p-2 rounded-full hover:bg-white/10" title="Sound">
+              <button onClick={toggleMute} className="p-2.5 rounded-full hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f2e24e]" title="Sound" aria-label={muted ? 'Unmute' : 'Mute'}>
                 {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
               </button>
               <span className="text-xs tabular-nums text-white/70 ml-1">
                 {fmt(time)} / {fmt(duration)}
               </span>
             </div>
-            <button onClick={fullscreen} className="p-2 rounded-full hover:bg-white/10" title="Fullscreen">
+            <button onClick={fullscreen} className="p-2.5 rounded-full hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f2e24e]" title="Fullscreen" aria-label="Fullscreen">
               <Maximize className="w-4 h-4" />
             </button>
           </div>

@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Html, useTexture, Text } from '@react-three/drei';
 import { Trash2, Pencil } from 'lucide-react';
-import { COLORS, PLACEHOLDER_TYPES } from '../constants';
+import { COLORS, PLACEHOLDER_TYPES, IS_MOBILE } from '../constants';
 import { PhotoData, ControlMode, InteractionMode } from '../types';
 import { generatePlaceholderTexture } from '../utils/math';
 
@@ -19,6 +19,12 @@ interface PolaroidProps {
 }
 
 const tempScale = new THREE.Vector3();
+
+// Only a few videos decode at once; the rest sit on a still frame.
+const MAX_PLAYING = IS_MOBILE ? 2 : 4;
+const playingVideos = new Set<HTMLVideoElement>();
+const _wp = new THREE.Vector3();
+const _ndc = new THREE.Vector3();
 
 const Polaroid: React.FC<PolaroidProps> = ({ 
   data, 
@@ -58,10 +64,9 @@ const Polaroid: React.FC<PolaroidProps> = ({
       return;
     }
     const video = document.createElement('video');
-    video.preload = 'auto';
+    video.preload = 'metadata';
     video.style.cssText = 'position:fixed;width:32px;height:32px;right:0;bottom:0;z-index:-1;pointer-events:none;';
     document.body.appendChild(video);
-    video.src = data.url;
     video.crossOrigin = 'anonymous';
     video.loop = true;
     video.muted = true;
@@ -78,9 +83,19 @@ const Polaroid: React.FC<PolaroidProps> = ({
         tex.offset.y = (1 - tex.repeat.y) / 2;
       }
     });
-    video.play().catch(() => {});
+    // Stagger loading so 7+ videos don't all hit the network at once,
+    // then park on a still frame until the polaroid is on screen.
+    const startTimer = setTimeout(() => {
+      video.src = data.url;
+      video.load();
+    }, Math.random() * (IS_MOBILE ? 2500 : 1200));
+    video.addEventListener('loadeddata', () => {
+      if (video.currentTime === 0) video.currentTime = 0.05;
+    }, { once: true });
     setVideoTexture(tex);
     return () => {
+      clearTimeout(startTimer);
+      playingVideos.delete(video);
       video.pause();
       video.remove();
       video.removeAttribute('src');
@@ -92,6 +107,23 @@ const Polaroid: React.FC<PolaroidProps> = ({
   useFrame((state) => {
     if (videoTexture) {
       const v = videoTexture.image as HTMLVideoElement;
+      // Every ~10 frames decide whether this video should be playing.
+      const tick = ((videoTexture as any).__tick = ((videoTexture as any).__tick || 0) + 1);
+      if (tick % 10 === 0 && v.readyState >= 2 && groupRef.current) {
+        groupRef.current.getWorldPosition(_wp);
+        const cam = state.camera;
+        _ndc.copy(_wp).project(cam);
+        const onScreen = _ndc.z < 1 && Math.abs(_ndc.x) < 1.05 && Math.abs(_ndc.y) < 1.05;
+        const facingCam = _wp.dot(cam.position) > 0;
+        const want = onScreen && facingCam && !document.hidden;
+        if (want && v.paused && playingVideos.size < MAX_PLAYING) {
+          playingVideos.add(v);
+          v.play().catch(() => playingVideos.delete(v));
+        } else if (!want && !v.paused) {
+          v.pause();
+          playingVideos.delete(v);
+        }
+      }
       if (v.readyState >= 2 && v.currentTime !== (videoTexture as any).__lastTime) {
         (videoTexture as any).__lastTime = v.currentTime;
         videoTexture.needsUpdate = true;
