@@ -1,8 +1,72 @@
 import { useState, useEffect, useRef } from 'react';
 
+// ---------------------------------------------------------------------------
+//  The playlist. Put your music files in  public/assets/music/  and list them
+//  here. They play in order, then start again from the top. A file that is
+//  missing is skipped automatically.
+// ---------------------------------------------------------------------------
+export const MUSIC_TRACKS = [
+    '/assets/music/its-beginning-to-look-a-lot-like-christmas.mp3',
+    '/assets/music/all-i-want-for-christmas-is-you.mp3',
+    '/assets/music/christmas-song.mp3',
+];
+
 export const useAudio = () => {
     const audioRef = useRef<HTMLAudioElement>(null);
     const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+    const [trackIndex, setTrackIndex] = useState(0);
+    const trackRef = useRef(0);
+    const failures = useRef(0);
+    const wantPlay = useRef(true);
+
+    const loadTrack = (audio: HTMLAudioElement, i: number, play: boolean) => {
+        trackRef.current = i;
+        setTrackIndex(i);
+        audio.src = MUSIC_TRACKS[i];
+        audio.load();
+        if (play) audio.play().then(() => setIsMusicPlaying(true)).catch(() => {});
+    };
+
+    const nextTrack = () => {
+        const audio = audioRef.current;
+        if (!audio) return;
+        loadTrack(audio, (trackRef.current + 1) % MUSIC_TRACKS.length, wantPlay.current);
+    };
+
+    // Playlist: play in order, skip missing files
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio) return;
+
+        audio.loop = false;
+        loadTrack(audio, 0, false);
+
+        const onEnded = () => {
+            failures.current = 0;
+            loadTrack(audio, (trackRef.current + 1) % MUSIC_TRACKS.length, true);
+        };
+        const onError = () => {
+            failures.current += 1;
+            if (failures.current >= MUSIC_TRACKS.length) {
+                setIsMusicPlaying(false); // nothing could be loaded
+                return;
+            }
+            loadTrack(audio, (trackRef.current + 1) % MUSIC_TRACKS.length, wantPlay.current);
+        };
+        const onPlaying = () => {
+            failures.current = 0;
+        };
+
+        audio.addEventListener('ended', onEnded);
+        audio.addEventListener('error', onError);
+        audio.addEventListener('playing', onPlaying);
+        return () => {
+            audio.removeEventListener('ended', onEnded);
+            audio.removeEventListener('error', onError);
+            audio.removeEventListener('playing', onPlaying);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         const audio = audioRef.current;
@@ -68,9 +132,11 @@ export const useAudio = () => {
         if (!audioRef.current) return;
 
         if (!audioRef.current.paused) {
+            wantPlay.current = false;
             audioRef.current.pause();
             setIsMusicPlaying(false);
         } else {
+            wantPlay.current = true;
             audioRef.current.play()
                 .then(() => setIsMusicPlaying(true))
                 .catch(err => console.error("Toggle play failed:", err));
@@ -80,6 +146,8 @@ export const useAudio = () => {
     return {
         audioRef,
         isMusicPlaying,
-        toggleMusic
+        toggleMusic,
+        nextTrack,
+        trackIndex
     };
 };
