@@ -214,7 +214,7 @@ const Polaroid: React.FC<PolaroidProps> = ({
         }
     } else {
         // View Mode: Zoom to this photo (videos also open the preview player)
-        onPhotoClick(data);
+        onPhotoClick(data); if (!isVideo && data.url) window.dispatchEvent(new CustomEvent('image-preview', { detail: { url: data.url, caption: data.caption } }));
         if (isVideo) {
           window.dispatchEvent(new CustomEvent('video-preview', { detail: { url: data.url, caption: data.caption } }));
         }

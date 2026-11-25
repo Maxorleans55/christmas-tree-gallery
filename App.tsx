@@ -4,6 +4,7 @@ import Overlay from './components/Overlay';
 import HandController from './components/HandController';
 import InstagramModal from './components/InstagramModal';
 import VideoPreview from './components/VideoPreview';
+import ImagePreview from './components/ImagePreview';
 import InstallPrompt from './components/InstallPrompt';
 import { generatePhotoPositions } from './utils/math';
 import { ControlMode, PhotoData, InteractionMode } from './types';
@@ -383,6 +384,7 @@ const App: React.FC = () => {
           }}
         />
       )}
+      <ImagePreview />
       <InstallPrompt />
       <Analytics />
     </div>
