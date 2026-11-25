@@ -1,6 +1,6 @@
 // Simple service worker: makes the app installable and loads faster on repeat visits.
 // Videos and music are left to the browser (they use range requests, which caches handle badly).
-const CACHE = 'tree-v1';
+const CACHE = 'tree-v2';
 const SHELL = ['./', './manifest.webmanifest', './icons/icon-192.png'];
 const SKIP_EXT = /\.(mp4|mov|webm|mp3|m4a|wav)$/i;
 

@@ -18,7 +18,7 @@
       window.dispatchEvent(new Event('bip-ready'));
     });
   </script>
-  <meta name="theme-color" content="#050505" />
+  <meta name="theme-color" content="#07150d" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Our Tree" />
@@ -57,16 +57,23 @@
       }
     }
 
-    /* ---------- Launch splash ---------- */
+    /* ---------- Launch splash: the same snow globe as the app icon, coming to life ---------- */
+    /* The phone's own launch screen shows the globe on this exact colour, so the hand-over is seamless. */
     #splash {
       position: fixed; inset: 0; z-index: 9999;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      background: radial-gradient(ellipse at 50% 40%, #0f3d24 0%, #07150d 55%, #050505 100%);
+      background: #07150d;
       transition: opacity .9s ease, visibility .9s ease;
       overflow: hidden;
     }
+    #splash::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 42%, #0f3d24 0%, #07150d 62%);
+      opacity: 0; animation: gl-fade 1.4s ease-out .3s forwards;
+    }
     #splash.hide { opacity: 0; visibility: hidden; pointer-events: none; }
-    #splash .snow { position: absolute; inset: 0; pointer-events: none; }
+    @keyframes gl-fade { to { opacity: 1; } }
+    #splash .snow { position: absolute; inset: 0; pointer-events: none; opacity: 0; animation: gl-fade 1.2s ease-out 1.4s forwards; }
     #splash .snow i {
       position: absolute; top: -10px; border-radius: 50%; background: #fff;
       opacity: 0; animation: sp-fall linear infinite;
@@ -76,43 +83,42 @@
       10% { opacity: .9; }
       100% { transform: translate3d(var(--dx),105vh,0); opacity: .2; }
     }
-    #splash .logo { width: min(44vw, 220px); height: auto; overflow: visible; filter: drop-shadow(0 0 28px rgba(46,224,127,.35)); }
-    #splash .tier {
-      fill: #1fb865; fill-opacity: 0; stroke: #7dffb8; stroke-width: 3; stroke-linejoin: round;
-      stroke-dasharray: 700; stroke-dashoffset: 700;
-      animation: sp-draw 1.3s ease-out forwards, sp-fill .8s ease-out forwards;
+    #splash .globe { position: relative; width: min(52vw, 250px); height: auto; overflow: visible; animation: gl-wobble 1.4s ease-in-out 2.1s 1; transform-origin: 50% 85%; }
+    @keyframes gl-wobble {
+      0%,100% { transform: rotate(0); } 20% { transform: rotate(-5deg); } 45% { transform: rotate(4deg); }
+      70% { transform: rotate(-2deg); }
     }
-    #splash .tier.t1 { animation-delay: .15s, 1.1s; }
-    #splash .tier.t2 { animation-delay: .35s, 1.25s; }
-    #splash .tier.t3 { animation-delay: .55s, 1.4s; }
-    @keyframes sp-draw { to { stroke-dashoffset: 0; } }
-    @keyframes sp-fill { to { fill-opacity: 1; stroke: #2ee07f; } }
-    #splash .trunk { fill: #7a4a21; opacity: 0; animation: sp-pop .5s ease-out 1.5s forwards; }
-    #splash .star {
-      fill: #f2e24e; opacity: 0; transform-box: fill-box; transform-origin: center;
-      animation: sp-star .9s cubic-bezier(.2,1.4,.4,1) 1.7s forwards, sp-glow 1.8s ease-in-out 2.6s infinite;
-    }
+    #splash .tree-part { transform-box: fill-box; transform-origin: 50% 100%; opacity: 0; animation: gl-grow .7s cubic-bezier(.2,1.3,.4,1) forwards; }
+    #splash .tree-part.p1 { animation-delay: .35s; }
+    #splash .tree-part.p2 { animation-delay: .6s; }
+    #splash .tree-part.p3 { animation-delay: .85s; }
+    @keyframes gl-grow { from { opacity: 0; transform: scale(.2); } to { opacity: 1; transform: scale(1); } }
+    #splash .gl-star { opacity: 0; transform-box: fill-box; transform-origin: center; animation: sp-star .9s cubic-bezier(.2,1.4,.4,1) 1.25s forwards, sp-glow 1.8s ease-in-out 2.3s infinite; }
     @keyframes sp-star { from { opacity: 0; transform: scale(0) rotate(-140deg); } to { opacity: 1; transform: scale(1) rotate(0); } }
-    @keyframes sp-glow { 0%,100% { filter: drop-shadow(0 0 4px #f2e24e); } 50% { filter: drop-shadow(0 0 16px #fff1a1); } }
-    #splash .orn { opacity: 0; transform-box: fill-box; transform-origin: center; animation: sp-pop .45s cubic-bezier(.2,1.6,.4,1) forwards, sp-twinkle 1.6s ease-in-out infinite; }
+    @keyframes sp-glow { 0%,100% { filter: drop-shadow(0 0 3px #f2d56b); } 50% { filter: drop-shadow(0 0 12px #fff1a1); } }
+    #splash .flake { fill: #fff; opacity: 0; animation: gl-flake linear infinite; }
+    @keyframes gl-flake {
+      0% { transform: translate(0,-30px); opacity: 0; } 12% { opacity: .9; } 100% { transform: translate(var(--fx),290px); opacity: .1; }
+    }
+    #splash .gl-bulb { opacity: 0; transform-box: fill-box; transform-origin: center; animation: sp-pop .4s cubic-bezier(.2,1.6,.4,1) forwards, sp-twinkle 1.6s ease-in-out infinite; }
     @keyframes sp-pop { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: scale(1); } }
-    @keyframes sp-twinkle { 0%,100% { filter: brightness(1); } 50% { filter: brightness(1.7); } }
+    @keyframes sp-twinkle { 0%,100% { filter: brightness(1); } 50% { filter: brightness(1.8); } }
     #splash h1 {
-      margin: 18px 0 0; font-family: 'Great Vibes', cursive; font-weight: 400;
+      position: relative; margin: 14px 0 0; font-family: 'Great Vibes', cursive; font-weight: 400;
       font-size: clamp(34px, 8vw, 54px); color: #fff1a1; letter-spacing: .02em; text-align: center;
       text-shadow: 0 0 18px rgba(242,226,78,.55);
-      opacity: 0; transform: translateY(12px); animation: sp-text 1s ease-out 2.0s forwards;
+      opacity: 0; transform: translateY(12px); animation: sp-text 1s ease-out 1.5s forwards;
     }
     #splash p {
-      margin: 6px 0 0; font-family: system-ui, sans-serif; font-size: 12px; letter-spacing: .35em; text-transform: uppercase;
-      color: rgba(255,255,255,.6); opacity: 0; animation: sp-text 1s ease-out 2.3s forwards;
+      position: relative; margin: 6px 0 0; font-family: system-ui, sans-serif; font-size: 12px; letter-spacing: .35em; text-transform: uppercase;
+      color: rgba(255,255,255,.6); opacity: 0; animation: sp-text 1s ease-out 1.8s forwards;
     }
     @keyframes sp-text { to { opacity: 1; transform: translateY(0); } }
-    #splash .bar { margin-top: 26px; width: 120px; height: 3px; border-radius: 3px; background: rgba(255,255,255,.12); overflow: hidden; opacity: 0; animation: sp-text .6s ease-out 2.4s forwards; }
+    #splash .bar { position: relative; margin-top: 26px; width: 120px; height: 3px; border-radius: 3px; background: rgba(255,255,255,.12); overflow: hidden; opacity: 0; animation: sp-text .6s ease-out 1.9s forwards; }
     #splash .bar::after { content: ''; display: block; height: 100%; width: 40%; border-radius: 3px; background: linear-gradient(90deg, transparent, #f2e24e, transparent); animation: sp-load 1.2s ease-in-out infinite; }
     @keyframes sp-load { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
     @media (prefers-reduced-motion: reduce) {
-      #splash *, #splash { animation-duration: .01s !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; }
+      #splash *, #splash, #splash::before { animation-duration: .01s !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; }
     }
   </style>
   <script type="importmap">
@@ -141,13 +147,27 @@
 <body>
   <div id="splash" aria-hidden="true">
     <div class="snow"><i style="left:41%;width:3px;height:3px;--dx:10px;animation-duration:8.3s;animation-delay:-0.6s"></i><i style="left:68%;width:2px;height:2px;--dx:6px;animation-duration:7.9s;animation-delay:-7.3s"></i><i style="left:27%;width:2px;height:2px;--dx:-29px;animation-duration:7.2s;animation-delay:-0.6s"></i><i style="left:11%;width:5px;height:5px;--dx:14px;animation-duration:5.3s;animation-delay:-4.5s"></i><i style="left:28%;width:5px;height:5px;--dx:-33px;animation-duration:7.9s;animation-delay:-3.2s"></i><i style="left:28%;width:2px;height:2px;--dx:31px;animation-duration:9.3s;animation-delay:-2.3s"></i><i style="left:18%;width:5px;height:5px;--dx:-25px;animation-duration:7.9s;animation-delay:-4.5s"></i><i style="left:87%;width:3px;height:3px;--dx:-27px;animation-duration:7.9s;animation-delay:-5.1s"></i><i style="left:47%;width:2px;height:2px;--dx:30px;animation-duration:8.6s;animation-delay:-4.5s"></i><i style="left:79%;width:3px;height:3px;--dx:23px;animation-duration:8.4s;animation-delay:-3.4s"></i><i style="left:40%;width:4px;height:4px;--dx:34px;animation-duration:9.6s;animation-delay:-2.9s"></i><i style="left:31%;width:3px;height:3px;--dx:-9px;animation-duration:5.4s;animation-delay:-2.4s"></i><i style="left:63%;width:3px;height:3px;--dx:17px;animation-duration:6.4s;animation-delay:-7.8s"></i><i style="left:15%;width:5px;height:5px;--dx:13px;animation-duration:5.8s;animation-delay:-2.7s"></i><i style="left:62%;width:4px;height:4px;--dx:-35px;animation-duration:9.8s;animation-delay:-0.6s"></i><i style="left:71%;width:5px;height:5px;--dx:0px;animation-duration:6.7s;animation-delay:-2.8s"></i><i style="left:63%;width:5px;height:5px;--dx:18px;animation-duration:5.3s;animation-delay:-0.7s"></i><i style="left:34%;width:4px;height:4px;--dx:-32px;animation-duration:5.3s;animation-delay:-5.6s"></i><i style="left:82%;width:5px;height:5px;--dx:17px;animation-duration:6.4s;animation-delay:-3.1s"></i><i style="left:85%;width:3px;height:3px;--dx:-38px;animation-duration:9.7s;animation-delay:-2.8s"></i><i style="left:78%;width:2px;height:2px;--dx:23px;animation-duration:5.3s;animation-delay:-6.1s"></i><i style="left:16%;width:3px;height:3px;--dx:10px;animation-duration:7.0s;animation-delay:-7.0s"></i><i style="left:10%;width:3px;height:3px;--dx:17px;animation-duration:7.0s;animation-delay:-2.2s"></i><i style="left:17%;width:4px;height:4px;--dx:30px;animation-duration:6.4s;animation-delay:-3.3s"></i><i style="left:45%;width:4px;height:4px;--dx:-11px;animation-duration:5.8s;animation-delay:-1.4s"></i><i style="left:29%;width:3px;height:3px;--dx:-39px;animation-duration:7.4s;animation-delay:-4.7s"></i><i style="left:33%;width:3px;height:3px;--dx:-40px;animation-duration:5.7s;animation-delay:-4.3s"></i><i style="left:78%;width:5px;height:5px;--dx:0px;animation-duration:9.8s;animation-delay:-5.5s"></i><i style="left:65%;width:5px;height:5px;--dx:-34px;animation-duration:7.3s;animation-delay:-7.0s"></i><i style="left:87%;width:5px;height:5px;--dx:10px;animation-duration:7.0s;animation-delay:-3.2s"></i><i style="left:61%;width:4px;height:4px;--dx:-33px;animation-duration:6.0s;animation-delay:-7.9s"></i><i style="left:56%;width:3px;height:3px;--dx:-26px;animation-duration:6.7s;animation-delay:-0.4s"></i><i style="left:0%;width:5px;height:5px;--dx:-21px;animation-duration:7.7s;animation-delay:-7.6s"></i><i style="left:78%;width:2px;height:2px;--dx:-31px;animation-duration:9.4s;animation-delay:-4.9s"></i></div>
-    <svg class="logo" viewBox="60 20 392 450" xmlns="http://www.w3.org/2000/svg">
-      <polygon class="tier t1" points="256,110 316,206 196,206"/>
-      <polygon class="tier t2" points="256,170 346,308 166,308"/>
-      <polygon class="tier t3" points="256,250 396,420 116,420"/>
-      <rect class="trunk" x="238" y="420" width="36" height="44" rx="4"/>
-      <circle class="orn" cx="226" cy="262" r="9" fill="#ff421c" style="animation-delay:2.05s,2.05s"/><circle class="orn" cx="288" cy="318" r="9" fill="#f2e24e" style="animation-delay:2.15s,2.15s"/><circle class="orn" cx="214" cy="364" r="9" fill="#f2e24e" style="animation-delay:2.25s,2.25s"/><circle class="orn" cx="312" cy="376" r="9" fill="#ff421c" style="animation-delay:2.35s,2.35s"/><circle class="orn" cx="262" cy="214" r="9" fill="#ff421c" style="animation-delay:1.95s,1.95s"/><circle class="orn" cx="250" cy="300" r="9" fill="#fff1a1" style="animation-delay:2.30s,2.30s"/><circle class="orn" cx="340" cy="404" r="9" fill="#ff421c" style="animation-delay:2.40s,2.40s"/><circle class="orn" cx="172" cy="404" r="9" fill="#f2e24e" style="animation-delay:2.45s,2.45s"/>
-      <polygon class="star" points="256,40 269,78 309,78 277,101 289,140 256,117 223,140 235,101 203,78 243,78"/>
+<svg class="globe" viewBox="90 60 332 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Snow globe">
+      <defs>
+        <linearGradient id="spgold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff6c2"/><stop offset=".5" stop-color="#f2d56b"/><stop offset="1" stop-color="#c99a2e"/></linearGradient>
+        <linearGradient id="spgold2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff6c2"/><stop offset=".55" stop-color="#e8c24f"/><stop offset="1" stop-color="#b98a28"/></linearGradient>
+        <radialGradient id="spglass" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#ffffff" stop-opacity=".30"/><stop offset=".6" stop-color="#9fe8c3" stop-opacity=".08"/><stop offset="1" stop-color="#ffffff" stop-opacity=".04"/></radialGradient>
+        <clipPath id="spclip"><circle cx="256" cy="232" r="146"/></clipPath>
+      </defs>
+      <circle cx="256" cy="232" r="150" fill="#0c3a27"/>
+      <g clip-path="url(#spclip)">
+        <g class="tree-part p1"><polygon points="256,150 286,200 270,200 298,248 214,248 242,200 226,200" fill="#2ee07f"/></g>
+        <g class="tree-part p2"><polygon points="256,196 292,254 272,254 306,306 206,306 240,254 220,254" fill="#1fb865"/></g>
+        <g class="tree-part p3"><rect x="248" y="306" width="16" height="20" rx="3" fill="#7a4a21"/></g>
+        <circle class="gl-bulb" cx="240" cy="236" r="5" fill="#ff421c" style="animation-delay:1.1s,1.1s"/>
+        <circle class="gl-bulb" cx="272" cy="262" r="5" fill="#f2e24e" style="animation-delay:1.2s,1.2s"/>
+        <circle class="gl-bulb" cx="236" cy="288" r="5" fill="#f2e24e" style="animation-delay:1.3s,1.3s"/>
+        <circle class="gl-bulb" cx="284" cy="294" r="5" fill="#ff421c" style="animation-delay:1.4s,1.4s"/>
+        <circle class="flake" cx="190" cy="150" r="4" style="--fx:10px;animation-duration:5.2s;animation-delay:-0.2s"/><circle class="flake" cx="330" cy="150" r="3.5" style="--fx:-12px;animation-duration:6.1s;animation-delay:-1.4s"/><circle class="flake" cx="214" cy="150" r="3" style="--fx:8px;animation-duration:5.7s;animation-delay:-2.2s"/><circle class="flake" cx="312" cy="150" r="4" style="--fx:-9px;animation-duration:6.6s;animation-delay:-3.1s"/><circle class="flake" cx="258" cy="150" r="3" style="--fx:6px;animation-duration:7.0s;animation-delay:-0.9s"/><circle class="flake" cx="160" cy="150" r="3" style="--fx:12px;animation-duration:6.3s;animation-delay:-4.2s"/><circle class="flake" cx="356" cy="150" r="3" style="--fx:-8px;animation-duration:5.5s;animation-delay:-2.6s"/><circle class="flake" cx="280" cy="150" r="3" style="--fx:10px;animation-duration:6.9s;animation-delay:-5.1s"/><circle class="flake" cx="236" cy="150" r="3.5" style="--fx:-6px;animation-duration:5.9s;animation-delay:-3.8s"/>
+      </g>
+      <circle cx="256" cy="232" r="150" fill="url(#spglass)" stroke="url(#spgold)" stroke-width="7"/>
+      <path class="gl-star" d="M256 128 Q260 142 274 146 Q260 150 256 164 Q252 150 238 146 Q252 142 256 128Z" fill="url(#spgold)"/>
+      <path d="M150 360 Q256 392 362 360 L378 424 Q256 452 134 424Z" fill="url(#spgold2)"/>
     </svg>
     <h1>Merry Christmas</h1>
     <p>Our moments</p>
