@@ -1,8 +1,9 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { RoundedBox } from '@react-three/drei';
+import { RoundedBox, Html } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { COLORS, TREE_CONFIG } from '../constants';
+import { GIFT_BUILDERS, GIFT_COUNT, GIFT_MESSAGES } from './Gifts';
 
 interface PresentProps {
   position: THREE.Vector3;
@@ -13,6 +14,7 @@ interface PresentProps {
   ribbonColor: string;
   explodeDir?: THREE.Vector3;
   explodeRotation?: THREE.Vector3;
+  giftIndex?: number;
 }
 
 // High fidelity ribbon material with sheen and clearcoat
@@ -141,16 +143,59 @@ const RibbonTail: React.FC<{ rotation?: [number, number, number], length?: numbe
   };
 
 const PresentBox: React.FC<PresentProps & { isExploded: boolean }> = ({ 
-  position, rotation, scale, color, pattern, ribbonColor, explodeDir, explodeRotation, isExploded 
+  position, rotation, scale, color, pattern, ribbonColor, explodeDir, explodeRotation, isExploded, giftIndex = 0
 }) => {
   const groupRef = useRef<THREE.Group>(null);
   const progress = useRef(0);
+
+  // --- open / close the present to show the gift inside ---
+  const [open, setOpen] = useState(false);
+  const [showNote, setShowNote] = useState(false);
+  const openProg = useRef(0);
+  const bowRef = useRef<THREE.Group>(null);
+  const holeRef = useRef<THREE.Mesh>(null);
+  const giftRef = useRef<THREE.Group>(null);
+  // only one present is open at a time
+  const myId = useRef(Math.random());
+  useEffect(() => {
+    const onOther = (e: Event) => {
+      if ((e as CustomEvent<number>).detail !== myId.current) {
+        setOpen(false);
+        setShowNote(false);
+      }
+    };
+    window.addEventListener('present-opened', onOther);
+    return () => window.removeEventListener('present-opened', onOther);
+  }, []);
+  const giftGeo = useMemo(() => GIFT_BUILDERS[giftIndex % GIFT_COUNT](), [giftIndex]);
 
   useFrame((state) => {
     const target = isExploded ? 1 : 0;
     const lerpFactor = isExploded ? 0.05 : 0.12; // Faster return
     progress.current = THREE.MathUtils.lerp(progress.current, target, lerpFactor);
     
+    // open-lid animation
+    openProg.current = THREE.MathUtils.lerp(openProg.current, open && !isExploded ? 1 : 0, open ? 0.09 : 0.14);
+    const p = openProg.current;
+    const t = state.clock.elapsedTime;
+    if (bowRef.current) {
+      bowRef.current.position.set(0.15 * p, 1.0 + 0.9 * p, 0);
+      bowRef.current.rotation.set(0, p * 3, p * 0.6);
+      bowRef.current.scale.setScalar(Math.max(1 - p * p, 0.0001));
+      bowRef.current.visible = p < 0.98;
+    }
+    if (holeRef.current) {
+      holeRef.current.visible = p > 0.05;
+      holeRef.current.scale.setScalar(Math.min(p * 2, 1));
+    }
+    if (giftRef.current) {
+      const rise = Math.min(Math.max((p - 0.15) / 0.85, 0), 1);
+      giftRef.current.visible = rise > 0.01;
+      giftRef.current.position.y = 0.55 + rise * 1.05 + Math.sin(t * 2) * 0.04 * rise;
+      giftRef.current.rotation.y = t * 0.9;
+      giftRef.current.scale.setScalar(0.25 + rise * 0.95);
+    }
+
     if (groupRef.current && explodeDir && explodeRotation) {
       const time = state.clock.elapsedTime;
       const seed = Math.sin(position.x * 12.9898 + position.z * 78.233) * 43758.5453;
@@ -180,7 +225,22 @@ const PresentBox: React.FC<PresentProps & { isExploded: boolean }> = ({
   const texture = useGiftTexture(color, pattern);
 
   return (
-    <group ref={groupRef} position={position} rotation={rotation} scale={scale}>
+    <group
+      ref={groupRef}
+      position={position}
+      rotation={rotation}
+      scale={scale}
+      onClick={(e) => {
+        if (isExploded) return;
+        e.stopPropagation();
+        const next = !open;
+        setOpen(next);
+        setShowNote(next);
+        if (next) window.dispatchEvent(new CustomEvent('present-opened', { detail: myId.current }));
+      }}
+      onPointerOver={(e) => { if (!isExploded) { e.stopPropagation(); document.body.style.cursor = 'pointer'; } }}
+      onPointerOut={() => { document.body.style.cursor = ''; }}
+    >
       {/* Main Box - Upgraded to Physical Material for clearcoat/sheen */}
       <RoundedBox args={[1, 1, 1]} radius={0.02} smoothness={4} position={[0, 0.5, 0]}>
         <meshPhysicalMaterial 
@@ -204,7 +264,38 @@ const PresentBox: React.FC<PresentProps & { isExploded: boolean }> = ({
       </RoundedBox>
 
       {/* --- BOW KNOT & LOOPS --- */}
-      <group position={[0, 1.0, 0]}>
+      {/* dark opening on top + the gift rising out of it */}
+      <mesh ref={holeRef} position={[0, 1.005, 0]} rotation={[-Math.PI / 2, 0, 0]} visible={false}>
+        <planeGeometry args={[0.72, 0.72]} />
+        <meshBasicMaterial color="#120a08" />
+      </mesh>
+      <group ref={giftRef} position={[0, 0.55, 0]} visible={false}>
+        <mesh geometry={giftGeo}>
+          <meshStandardMaterial vertexColors roughness={0.45} metalness={0.15} emissive="#ffffff" emissiveIntensity={0.08} />
+        </mesh>
+        {showNote && open && (
+          <Html position={[0, 1.15, 0]} center distanceFactor={10} style={{ pointerEvents: 'none' }}>
+            <div
+              style={{
+                whiteSpace: 'nowrap',
+                padding: '6px 14px',
+                borderRadius: 999,
+                background: 'rgba(11,15,12,0.82)',
+                border: '1px solid rgba(242,226,78,0.5)',
+                color: '#fff4d6',
+                fontFamily: "'Great Vibes', cursive",
+                fontSize: 22,
+                boxShadow: '0 0 24px rgba(242,226,78,0.3)',
+              }}
+            >
+              {GIFT_MESSAGES[giftIndex % GIFT_COUNT]}
+            </div>
+          </Html>
+        )}
+      </group>
+
+      {/* --- BOW KNOT & LOOPS (pops off when the present is opened) --- */}
+      <group ref={bowRef} position={[0, 1.0, 0]}>
         
         {/* Central Knot - small sphere/rounded box */}
         <mesh position={[0, 0.05, 0]} scale={[1, 0.6, 1]}>
@@ -296,7 +387,8 @@ const Presents: React.FC<PresentsProps> = ({ isExploded = false }) => {
           pattern,
           ribbonColor,
           explodeDir,
-          explodeRotation
+          explodeRotation,
+          giftIndex: items.length % GIFT_COUNT
         });
       }
     }
