@@ -10,6 +10,7 @@ import Polaroid from './Polaroid';
 import Star from './Star';
 import Presents from './Presents';
 import Ornaments from './Ornaments';
+import Characters from './Characters';
 import Snow from './Snow';
 import { CAMERA_CONFIG, COLORS, GESTURE_THRESHOLDS, IS_MOBILE } from '../constants';
 import { PhotoData, ControlMode, ZoomLevel, InteractionMode } from '../types';
@@ -474,6 +475,7 @@ const Scene: React.FC<SceneProps> = ({
         <Star isExploded={isExploded} />
         {!(isRecording && recordingType === 'ALBUM') && <Presents isExploded={isExploded} />}
         <Ornaments isExploded={isExploded} photos={photos} />
+        {!(isRecording && recordingType === 'ALBUM') && <Characters isExploded={isExploded} />}
 
         {/* Magic Flies / Sparkles around the tree */}
         <Sparkles
